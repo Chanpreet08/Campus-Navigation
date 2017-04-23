@@ -43,6 +43,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.location.LocationServices;
@@ -81,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         pd = Tools.getProgressDialog(MainActivity.this);
-
+        buildGoogleApiClient();
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -127,19 +128,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             }
         });
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-
         mapFragment.getMapAsync(this);
-//        mGoogleMap.setMyLocationEnabled(true);
         wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
@@ -179,7 +168,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+        return false;
     }
 
     @Override
@@ -217,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         {
             LatLng marker = new LatLng(Double.parseDouble(lat),Double.parseDouble(log));
             googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(marker, 17));
-            googleMap.addMarker(new MarkerOptions().title("LNMIIT").position(marker));
+            googleMap.addMarker(new MarkerOptions().title("LNMIIT").position(marker).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_add_location_white_24px)));
         }
 
 
