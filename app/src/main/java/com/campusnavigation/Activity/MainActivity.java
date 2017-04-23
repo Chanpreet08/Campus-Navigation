@@ -1,6 +1,7 @@
 package com.campusnavigation.Activity;
 
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -22,6 +23,7 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -33,6 +35,7 @@ import com.campusnavigation.R;
 import com.campusnavigation.Response.MapResponse;
 import com.campusnavigation.Rest.ApiClient;
 import com.campusnavigation.Rest.ApiInterface;
+import com.campusnavigation.Tools.Tools;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -67,6 +70,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Location location;
     private String lat;
     private String log;
+    private ProgressDialog pd;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,6 +78,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
+        pd = Tools.getProgressDialog(MainActivity.this);
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
@@ -90,17 +95,33 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                 mapRequest.setLatitude(lat);
                 mapRequest.setLongitude(log);
                 mapRequest.setSignalEntries(signalList);
+                pd.show();
                 ApiInterface apiService = ApiClient.getRetrofitClient().create(ApiInterface.class);
                 retrofit2.Call<MapResponse> call = apiService.getLatLog(mapRequest);
                 call.enqueue(new Callback<MapResponse>() {
                     @Override
                     public void onResponse(Call<MapResponse> call, Response<MapResponse> response) {
-                        Toast.makeText(MainActivity.this,"Successful",Toast.LENGTH_SHORT).show();
+                        pd.dismiss();
+                        Log.d("error",response.code()+"");
+                        Toast.makeText(MainActivity.this,response.code()+"",Toast.LENGTH_SHORT).show();
+                        if(response.code()==200)
+                        {
+                            Toast.makeText(MainActivity.this,response.body().getResLatitude()+","+response.body().getResLongitude(),Toast.LENGTH_SHORT).show();
+                        }
+                        if(response.code()==404)
+                        {
+                            Toast.makeText(MainActivity.this,"404: Not Found",Toast.LENGTH_SHORT).show();
+                        }
+                        if(response.code()==500)
+                        {
+                            Toast.makeText(MainActivity.this,"500:Server error",Toast.LENGTH_SHORT).show();
+                        }
                     }
 
                     @Override
                     public void onFailure(Call<MapResponse> call, Throwable t) {
-                        Toast.makeText(MainActivity.this,"Successful",Toast.LENGTH_SHORT).show();
+                        pd.dismiss();
+                        Toast.makeText(MainActivity.this,"UnSuccessful",Toast.LENGTH_SHORT).show();
                     }
                 });
             }
