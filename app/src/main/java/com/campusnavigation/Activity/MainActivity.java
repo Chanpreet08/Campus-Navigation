@@ -27,7 +27,12 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
+import com.campusnavigation.Model.MapRequest;
+import com.campusnavigation.Model.Signal;
 import com.campusnavigation.R;
+import com.campusnavigation.Response.MapResponse;
+import com.campusnavigation.Rest.ApiClient;
+import com.campusnavigation.Rest.ApiInterface;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
@@ -41,6 +46,10 @@ import com.google.android.gms.location.LocationServices;
 import java.util.ArrayList;
 import java.util.List;
 
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,GoogleApiClient.ConnectionCallbacks,GoogleApiClient.OnConnectionFailedListener{
 
     private SupportMapFragment mapFragment;
@@ -53,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private ArrayList<String> bssidList = new ArrayList<>();
     private ArrayList<String> ssidList = new ArrayList<>();
     private ArrayList<String> levelList = new ArrayList<>();
+    private ArrayList<Signal> signalList = new ArrayList<>();
     private GoogleApiClient googleApiClient;
     private Location location;
     private String lat;
@@ -69,8 +79,30 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
+                for(int i=0;i<levelList.size();i++)
+                {
+                    Signal signal = new Signal();
+                    signal.setMac(bssidList.get(i));
+                    signal.setStrength(levelList.get(i));
+                    signalList.add(signal);
+                }
+                MapRequest mapRequest = new MapRequest();
+                mapRequest.setLatitude(lat);
+                mapRequest.setLongitude(log);
+                mapRequest.setSignalEntries(signalList);
+                ApiInterface apiService = ApiClient.getRetrofitClient().create(ApiInterface.class);
+                retrofit2.Call<MapResponse> call = apiService.getLatLog(mapRequest);
+                call.enqueue(new Callback<MapResponse>() {
+                    @Override
+                    public void onResponse(Call<MapResponse> call, Response<MapResponse> response) {
+                        Toast.makeText(MainActivity.this,"Successful",Toast.LENGTH_SHORT).show();
+                    }
+
+                    @Override
+                    public void onFailure(Call<MapResponse> call, Throwable t) {
+                        Toast.makeText(MainActivity.this,"Successful",Toast.LENGTH_SHORT).show();
+                    }
+                });
             }
         });
         mapFragment = (SupportMapFragment) getSupportFragmentManager().findFragmentById(R.id.map);
