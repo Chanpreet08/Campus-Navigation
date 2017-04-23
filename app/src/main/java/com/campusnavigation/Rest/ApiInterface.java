@@ -13,6 +13,6 @@ import retrofit2.http.POST;
 
 public interface ApiInterface {
 
-    @POST("/loaction")
+    @POST("/location")
     Call<MapResponse> getLatLog(@Body MapRequest mapRequest);
 }

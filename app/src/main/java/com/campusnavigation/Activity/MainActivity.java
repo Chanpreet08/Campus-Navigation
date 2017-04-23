@@ -1,5 +1,6 @@
 package com.campusnavigation.Activity;
 
+import android.Manifest;
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -42,6 +43,7 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.location.LocationServices;
@@ -53,14 +55,14 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-public class MainActivity extends AppCompatActivity implements OnMapReadyCallback,GoogleApiClient.ConnectionCallbacks,GoogleApiClient.OnConnectionFailedListener{
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener {
 
     private SupportMapFragment mapFragment;
-    private double latitude =26.936281;
+    private double latitude = 26.936281;
     private double longitude = 75.923496;
     private WifiManager wifiManager;
     private LocationManager locationManager;
-    private boolean gpsEnabled= false;
+    private boolean gpsEnabled = false;
     private List<ScanResult> wifiList = new ArrayList<>();
     private ArrayList<String> bssidList = new ArrayList<>();
     private ArrayList<String> ssidList = new ArrayList<>();
@@ -71,6 +73,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     private String lat;
     private String log;
     private ProgressDialog pd;
+    private GoogleMap mGoogleMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -79,13 +82,12 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         pd = Tools.getProgressDialog(MainActivity.this);
-
+        buildGoogleApiClient();
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                for(int i=0;i<levelList.size();i++)
-                {
+                for (int i = 0; i < levelList.size(); i++) {
                     Signal signal = new Signal();
                     signal.setMac(bssidList.get(i));
                     signal.setStrength(levelList.get(i));
@@ -102,26 +104,25 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
                     @Override
                     public void onResponse(Call<MapResponse> call, Response<MapResponse> response) {
                         pd.dismiss();
-                        Log.d("error",response.code()+"");
-                        Toast.makeText(MainActivity.this,response.code()+"",Toast.LENGTH_SHORT).show();
-                        if(response.code()==200)
-                        {
-                            Toast.makeText(MainActivity.this,response.body().getResLatitude()+","+response.body().getResLongitude(),Toast.LENGTH_SHORT).show();
+                        Log.d("error", response.code() + "");
+                        if (response.code() == 200) {
+                            Toast.makeText(MainActivity.this, response.body().getResLatitude() + "," + response.body().getResLongitude(), Toast.LENGTH_SHORT).show();
+                            LatLng marker = new LatLng(Double.parseDouble(response.body().getResLatitude()), Double.parseDouble(response.body().getResLongitude()));
+                            mGoogleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(marker, 17));
+                            mGoogleMap.addMarker(new MarkerOptions().title("You Are Here").position(marker));
                         }
-                        if(response.code()==404)
-                        {
-                            Toast.makeText(MainActivity.this,"404: Not Found",Toast.LENGTH_SHORT).show();
+                        if (response.code() == 404) {
+                            Toast.makeText(MainActivity.this, "404: Not Found", Toast.LENGTH_SHORT).show();
                         }
-                        if(response.code()==500)
-                        {
-                            Toast.makeText(MainActivity.this,"500:Server error",Toast.LENGTH_SHORT).show();
+                        if (response.code() == 500) {
+                            Toast.makeText(MainActivity.this, "500:Server error", Toast.LENGTH_SHORT).show();
                         }
                     }
 
                     @Override
                     public void onFailure(Call<MapResponse> call, Throwable t) {
                         pd.dismiss();
-                        Toast.makeText(MainActivity.this,"UnSuccessful",Toast.LENGTH_SHORT).show();
+                        Toast.makeText(MainActivity.this, "UnSuccessful", Toast.LENGTH_SHORT).show();
                     }
                 });
             }
@@ -132,14 +133,13 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         gpsEnabled = locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER);
         askForPermission();
-        if(!gpsEnabled)
-        {
+        if (!gpsEnabled) {
             AlertDialog.Builder dialog = new AlertDialog.Builder(MainActivity.this);
             dialog.setMessage("Please Enable GPS");
             dialog.setPositiveButton("Enable Location", new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface paramDialogInterface, int paramInt) {
-                    Intent myIntent = new Intent( Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    Intent myIntent = new Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS);
                     startActivity(myIntent);
                     buildGoogleApiClient();
                 }
@@ -168,7 +168,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+        return false;
     }
 
     @Override
@@ -188,9 +188,28 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     @Override
     public void onMapReady(GoogleMap googleMap) {
-        LatLng marker = new LatLng(latitude,longitude);
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(marker, 17));
-        googleMap.addMarker(new MarkerOptions().title("LNMIIT").position(marker));
+        buildGoogleApiClient();
+        mGoogleMap = googleMap;
+        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO: Consider calling
+            //    ActivityCompat#requestPermissions
+            // here to request the missing permissions, and then overriding
+            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+            //                                          int[] grantResults)
+            // to handle the case where the user grants the permission. See the documentation
+            // for ActivityCompat#requestPermissions for more details.
+            return;
+        }
+        googleMap.setMyLocationEnabled(true
+        );
+        if(lat!=null && log!=null)
+        {
+            LatLng marker = new LatLng(Double.parseDouble(lat),Double.parseDouble(log));
+            googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(marker, 17));
+            googleMap.addMarker(new MarkerOptions().title("LNMIIT").position(marker).icon(BitmapDescriptorFactory.fromResource(R.drawable.ic_add_location_white_24px)));
+        }
+
+
     }
 
     class WifiScanReceiver extends BroadcastReceiver {
